@@ -10,6 +10,9 @@ const activeListeners: http.Server[] = [];
 const activeServers: ViteDevServer[] = [];
 const tempDirs: string[] = [];
 const PACKAGE_ROOT = path.dirname(fileURLToPath(new URL("../package.json", import.meta.url)));
+const ISLANDS_ROOT = path.resolve(PACKAGE_ROOT, "../ox-content-islands");
+const ISLANDS_ENTRY = path.join(ISLANDS_ROOT, "src", "index.ts");
+const ISLANDS_HTML_HOST_ENTRY = path.join(ISLANDS_ROOT, "src", "html-host.ts");
 
 afterEach(async () => {
   await Promise.all(activeListeners.splice(0).map((server) => closeServer(server)));
@@ -79,7 +82,13 @@ function viteConfigSource(sveltePackage: string): string {
     "      dev: { transformHtml: false },",
     "    }),",
     "  ],",
-    `  server: { fs: { allow: [root, ${JSON.stringify(PACKAGE_ROOT)}] } },`,
+    "  resolve: {",
+    "    alias: [",
+    `      { find: "@ox-content/islands/html-host", replacement: ${JSON.stringify(ISLANDS_HTML_HOST_ENTRY)} },`,
+    `      { find: "@ox-content/islands", replacement: ${JSON.stringify(ISLANDS_ENTRY)} },`,
+    "    ],",
+    "  },",
+    `  server: { fs: { allow: [root, ${JSON.stringify(PACKAGE_ROOT)}, ${JSON.stringify(ISLANDS_ROOT)}] } },`,
     "  build: { rollupOptions: { input: path.join(root, 'src', 'entry.js') } },",
     "};",
     "",
