@@ -41,7 +41,7 @@ export interface IslandConfig {
 export type HydrateFunction = (
   element: HTMLElement,
   props: Record<string, unknown>,
-) => void | (() => void);
+) => void | (() => void) | PromiseLike<void | (() => void)>;
 
 /**
  * Component registry mapping component names to hydrate functions.
@@ -75,6 +75,7 @@ export interface IslandInstance {
   element: HTMLElement;
   config: IslandConfig;
   cleanup?: () => void;
+  hydrating?: boolean;
   hydrated: boolean;
 }
 

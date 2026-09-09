@@ -14,6 +14,7 @@ describe("document asset public API", () => {
     const exportsField = packageJson.exports as unknown as Record<string, PackageConditionalExport>;
     const documentAssets = exportsField["./document-assets"];
     const customHost = exportsField["./custom-host"];
+    const htmlHost = exportsField["./html-host"];
 
     expect(documentAssets.import.types).toBe("./dist/document-assets.d.mts");
     expect(documentAssets.import.default).toBe("./dist/document-assets.mjs");
@@ -23,12 +24,17 @@ describe("document asset public API", () => {
     expect(customHost.import.default).toBe("./dist/custom-host.mjs");
     expect(customHost.require.types).toBe("./dist/custom-host-public.d.cts");
     expect(customHost.require.default).toBe("./dist/custom-host.cjs");
+    expect(htmlHost.import.types).toBe("./dist/html-host-public.d.mts");
+    expect(htmlHost.import.default).toBe("./dist/html-host-public.mjs");
+    expect(htmlHost.require.types).toBe("./dist/html-host-public.d.cts");
+    expect(htmlHost.require.default).toBe("./dist/html-host-public.cjs");
 
     const entries: string[] = require("../vite.config.ts").default.pack.entry;
     expect(entries).toEqual(
       expect.arrayContaining([
         "src/document-assets.ts",
         "src/custom-host.ts",
+        "src/html-host-public.ts",
         "src/theme-bootstrap.ts",
       ]),
     );

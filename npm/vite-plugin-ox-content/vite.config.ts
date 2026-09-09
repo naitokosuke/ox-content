@@ -17,6 +17,7 @@ export default defineConfig({
       "src/theme-bootstrap.ts",
       "src/document-assets.ts",
       "src/custom-host.ts",
+      "src/html-host-public.ts",
       // `jsxImportSource: "@ox-content/vite-plugin"` makes the JSX transform
       // emit imports of ./jsx-runtime and ./jsx-dev-runtime, so both need to
       // be real modules in dist/, not just symbols on the main entry.

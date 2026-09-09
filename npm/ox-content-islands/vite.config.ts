@@ -6,8 +6,8 @@ export default defineConfig({
     ignorePatterns: ["dist/**"],
   },
   pack: definePackConfig({
-    entry: ["src/index.ts", "src/runtime.ts"],
-    format: ["esm"],
+    entry: ["src/index.ts", "src/runtime.ts", "src/html-host.ts"],
+    format: ["esm", "cjs"],
     dts: true,
     clean: true,
     hash: false,

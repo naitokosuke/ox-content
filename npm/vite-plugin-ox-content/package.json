@@ -99,6 +99,16 @@
         "default": "./dist/custom-host.cjs"
       }
     },
+    "./html-host": {
+      "import": {
+        "types": "./dist/html-host-public.d.mts",
+        "default": "./dist/html-host-public.mjs"
+      },
+      "require": {
+        "types": "./dist/html-host-public.d.cts",
+        "default": "./dist/html-host-public.cjs"
+      }
+    },
     "./reader-chrome": {
       "import": {
         "types": "./dist/reader-chrome.d.mts",

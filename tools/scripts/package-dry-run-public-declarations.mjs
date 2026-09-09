@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { publicDeclarationEntries } from "./public-declaration-contracts.mjs";
+import { publicDeclarationValueUsage } from "./package-dry-run-html-host.mjs";
 import { solidHtmlHostRegistryFixture } from "./package-dry-run-solid-html-host.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -16,26 +17,30 @@ export function checkPublicDeclarationExports({
   readPackedFile,
   packedPackages,
 }) {
-  const entry = publicDeclarationEntries.find((candidate) => candidate.packageName === pkg.name);
-  if (!entry) return;
+  const entries = publicDeclarationEntries.filter(
+    (candidate) => candidate.packageName === pkg.name,
+  );
+  if (entries.length === 0) return;
 
-  for (const extension of ["mts", "cts"]) {
-    const declaration = readPackedFile(
-      tarball,
-      `dist/${publicDeclarationBase(entry)}.d.${extension}`,
-    );
-    checkDeclarationNames({ declaration, entry, extension, failures });
-  }
+  for (const entry of entries) {
+    for (const extension of ["mts", "cts"]) {
+      const declaration = readPackedFile(
+        tarball,
+        `dist/${publicDeclarationBase(entry)}.d.${extension}`,
+      );
+      checkDeclarationNames({ declaration, entry, extension, failures });
+    }
 
-  if (entry.browserOnlyForbidden) {
-    checkBrowserOnlyGraph({ tarball, entry, failures, readPackedFile });
-  }
+    if (entry.browserOnlyForbidden) {
+      checkBrowserOnlyGraph({ tarball, entry, failures, readPackedFile });
+    }
 
-  for (const mode of ["bundler", "nodenext", "node16"]) {
-    checkTypeConsumer({ tarball, entry, packDir, failures, packedPackages, mode });
+    for (const mode of ["bundler", "nodenext", "node16"]) {
+      checkTypeConsumer({ tarball, entry, packDir, failures, packedPackages, mode });
+    }
+    checkRuntimeConsumer({ tarball, entry, packDir, failures, packedPackages, mode: "import" });
+    checkRuntimeConsumer({ tarball, entry, packDir, failures, packedPackages, mode: "require" });
   }
-  checkRuntimeConsumer({ tarball, entry, packDir, failures, packedPackages, mode: "import" });
-  checkRuntimeConsumer({ tarball, entry, packDir, failures, packedPackages, mode: "require" });
 
   if (pkg.name === "@ox-content/vite-plugin-solid") {
     checkSolidHtmlHostRegistryConsumer({ tarball, packDir, failures, packedPackages });
@@ -204,7 +209,7 @@ function esmFixture(entry) {
     `import { ${entry.values.join(", ")} } from ${JSON.stringify(entry.specifier)};`,
     `import type { ${entry.types.join(", ")} } from ${JSON.stringify(entry.specifier)};`,
     typeAliases(entry.types),
-    valueUsage(entry, ""),
+    publicDeclarationValueUsage(entry, ""),
   ].join("\n");
 }
 
@@ -213,7 +218,7 @@ function cjsFixture(entry) {
   return [
     `import ${namespace} = require(${JSON.stringify(entry.specifier)});`,
     cjsTypeAliases(entry.types, entry.specifier),
-    valueUsage(entry, `${namespace}.`),
+    publicDeclarationValueUsage(entry, `${namespace}.`),
   ].join("\n");
 }
 
@@ -233,72 +238,6 @@ function cjsTypeAliases(types, specifier) {
         : `type ${name} = import(${JSON.stringify(specifier)}).${name};`,
     )
     .join("\n");
-}
-
-function valueUsage(entry, prefix) {
-  if (entry.distBase === "custom-host") {
-    return [
-      "declare const customOptions: OxContentCustomHostOptions;",
-      "declare const customAssets: OxContentCustomHostAssetsContext;",
-      `const customPlugin = ${prefix}createOxContentCustomHostPlugin(customOptions);`,
-      `const customOxOptions = ${prefix}customHostOxContentOptions();`,
-      `const customStyles = customAssets.stylesheets({ modules: ["/src/Island.ts"] });`,
-      "void customAssets.collectionManifest();",
-      "void customAssets.stylesheetContent({ stylesheets: customStyles.stylesheets });",
-      'const customDependency: OxContentCustomHostDependency = { path: "content/guide", kind: "directory" };',
-      'const customCollectionAssets: OxContentCustomHostCollectionAssetsOptions = { manifest: { assets: [] }, watch: [customDependency], ownedPrefixes: ["/assets/content"] };',
-      "customAssets.document({ islandStyles: customStyles.stylesheets });",
-      "declare const customContext: OxContentCustomHostRenderContext;",
-      "const customMarkdown = customContext.markdown.render<{ clientModules: string[] }>({",
-      '  source: "# Guide",',
-      '  documentPath: "content/guide.mdx",',
-      "  async renderHtml(ctx: OxContentCustomHostMarkdownRenderContext) {",
-      "    const styles = ctx.assets.stylesheets({ modules: [] });",
-      "    return { html: ctx.html, metadata: { clientModules: [] }, dependencies: styles.dependencies };",
-      "  },",
-      "});",
-      "const customRoute: OxContentCustomHostRoute = {",
-      '  path: "/guide",',
-      '  inputPath: "content/guide.md",',
-      '  lastUpdatedPaths: ["src/site-owner.ts", "content/guide"],',
-      "  dependencies: [customDependency],",
-      '  render: () => ({ html: "<h1>Guide</h1>", lastUpdatedPaths: ["src/guide.ts"] }),',
-      "};",
-      'const customResult: OxContentCustomHostRenderResult = { html: "<h1>Guide</h1>", lastUpdatedPaths: ["src/guide.ts"] };',
-      "const customDeps: string[] = customStyles.dependencies;",
-      "const customLastmodSources: readonly string[] | undefined = customRoute.lastUpdatedPaths;",
-      "void customResult.lastUpdatedPaths;",
-      "void customCollectionAssets;",
-      "void customMarkdown;",
-      "void customPlugin;",
-      "void customOxOptions;",
-      "void customDeps;",
-      "void customLastmodSources;",
-    ].join("\n");
-  }
-  const names = htmlHostClientNames(entry);
-  return [
-    `const hydrate = ${prefix}${names.createLazyHydrate}({ modules: {}, render: () => {} });`,
-    `const domRenderer = ${prefix}${names.createDomRenderer}({ mode: "render" });`,
-    `const domHydrate = ${prefix}${names.createLazyHydrate}({ modules: {}, mount: { mode: "render" } });`,
-    `void ${prefix}${names.loadDomRuntime};`,
-    `${prefix}${names.readSlot}({ dataset: {}, innerHTML: "" });`,
-    `${prefix}${names.initHost}({ initIslands: () => undefined, modules: {}, render: () => {} });`,
-    "void hydrate;",
-    "void domRenderer;",
-    "void domHydrate;",
-  ].join("\n");
-}
-
-function htmlHostClientNames(entry) {
-  const prefix = entry.packageName.endsWith("-svelte") ? "Svelte" : "Solid";
-  return {
-    initHost: `init${prefix}HtmlHost`,
-    createDomRenderer: `create${prefix}HtmlHostDomRenderer`,
-    createLazyHydrate: `create${prefix}HtmlHostLazyHydrate`,
-    loadDomRuntime: `load${prefix}HtmlHostDomRuntime`,
-    readSlot: `read${prefix}HtmlHostSlot`,
-  };
 }
 
 function runtimeAssertions(namespace, entry) {

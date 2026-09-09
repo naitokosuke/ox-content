@@ -1,4 +1,4 @@
-import { toSvelteHtmlHostClientModuleId } from "./html-host-registry-paths";
+import { formatHtmlHostDiagnostics, toHtmlHostClientModuleId } from "@ox-content/vite-plugin";
 import {
   renderSvelteHtmlHost,
   type RenderSvelteHtmlHostResult,
@@ -7,6 +7,7 @@ import {
   type SvelteHtmlHostDiagnostic,
   type SvelteServerModuleLoader,
 } from "./html-host";
+import { createSvelteHtmlHostComponentRenderer } from "./html-host-default-renderer";
 import type { MdxImport } from "@ox-content/vite-plugin";
 import type { ComponentsMap } from "./types";
 
@@ -43,7 +44,7 @@ export class SvelteHtmlHostRenderError extends Error {
   readonly diagnostics: SvelteHtmlHostDiagnostic[];
 
   constructor(diagnostics: readonly SvelteHtmlHostDiagnostic[]) {
-    super(formatSvelteHtmlHostDiagnostics(diagnostics));
+    super(formatHtmlHostDiagnostics(diagnostics));
     this.name = "SvelteHtmlHostRenderError";
     this.diagnostics = [...diagnostics];
   }
@@ -53,6 +54,7 @@ export function createSvelteHtmlHostRenderer(
   input: CreateSvelteHtmlHostRendererInput,
 ): SvelteHtmlHostRenderer {
   const policy = input.diagnostics ?? "throw";
+  const defaultRenderComponent = createSvelteHtmlHostComponentRenderer(input.loadModule);
 
   return async (html, context) => {
     const root = context.root ?? input.root;
@@ -65,11 +67,11 @@ export function createSvelteHtmlHostRenderer(
       imports: context.imports,
       components: context.components ?? input.components,
       loadModule: input.loadModule,
-      renderComponent: context.renderComponent ?? input.renderComponent,
+      renderComponent: context.renderComponent ?? input.renderComponent ?? defaultRenderComponent,
       resolveClientModule:
         context.resolveClientModule ??
         input.resolveClientModule ??
-        ((module) => toSvelteHtmlHostClientModuleId(module.serverModuleId, root)),
+        ((module) => toHtmlHostClientModuleId(module.serverModuleId, root)),
     });
 
     if (policy === "throw" && result.diagnostics.length > 0) {
@@ -78,22 +80,4 @@ export function createSvelteHtmlHostRenderer(
 
     return result;
   };
-}
-
-function formatSvelteHtmlHostDiagnostics(diagnostics: readonly SvelteHtmlHostDiagnostic[]): string {
-  if (diagnostics.length === 0) {
-    return "Svelte HTML host rendering failed.";
-  }
-  return diagnostics
-    .map((diagnostic) => {
-      const details = [
-        diagnostic.documentPath,
-        diagnostic.component && `component ${diagnostic.component}`,
-        diagnostic.moduleId && `module ${diagnostic.moduleId}`,
-      ].filter(Boolean);
-      return `${diagnostic.code}: ${diagnostic.message}${
-        details.length > 0 ? ` (${details.join(", ")})` : ""
-      }`;
-    })
-    .join("\n");
 }

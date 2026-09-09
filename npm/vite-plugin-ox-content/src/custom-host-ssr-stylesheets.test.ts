@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 import { build as viteBuild, createServer } from "vite";
 import {
   resolveSsrStylesheetBundleOutput,
+  ssrStylesheetVirtualCss,
   type SsrStylesheetOutputBundle,
 } from "./custom-host-ssr-build-stylesheets";
 import {
@@ -24,6 +25,22 @@ import {
 afterEach(cleanupCustomHostSsrFixtures);
 
 describe("custom host SSR stylesheets", () => {
+  it("keeps framework style roots live while collecting build CSS", () => {
+    expect(
+      ssrStylesheetVirtualCss(
+        { css: [{ file: "/repo/src/Page.svelte" }, { file: "/repo/src/page.css" }] },
+        "/repo",
+      ),
+    ).toBe(
+      [
+        'import __oxContentSsrStyleRoot0 from "/src/Page.svelte";',
+        "export const __oxContentSsrStyleRoot0Component = __oxContentSsrStyleRoot0;",
+        'import "/src/page.css";',
+        "",
+      ].join("\n"),
+    );
+  });
+
   it("collects imported build chunk CSS before direct root CSS", () => {
     const bundle = {
       "assets/root.js": {

@@ -184,6 +184,13 @@ document as a Vite module. `createSolidHtmlHostRenderer()` prepares the common
 document-local MDX import resolution, server module loading, diagnostics policy,
 and client module id mapping for that host.
 
+The lower-level framework-neutral contract is exported from
+`@ox-content/vite-plugin/html-host`, and the browser loader contract is exported
+from `@ox-content/islands/html-host`. The Solid helpers keep the existing
+Solid-specific names and virtual module id while delegating the shared
+discovery, metadata, lazy-loading, error, completion, and disposal behavior to
+that contract.
+
 ```ts
 import { createSolidHtmlHostRenderer, type MdxImport } from "@ox-content/vite-plugin-solid";
 

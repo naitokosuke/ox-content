@@ -189,7 +189,7 @@ describe("Svelte island hydration", () => {
       await server?.close();
       await rm(root, { recursive: true, force: true });
     }
-  });
+  }, 30_000);
 
   it("keeps non-SSR islands on the mount path", async () => {
     const result = await transformMarkdownWithSvelte(

@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import { normalizeFilePath, publicModuleId } from "./custom-host-ssr-imports";
+import { isFrameworkStyleRoot, normalizeFilePath, publicModuleId } from "./custom-host-ssr-imports";
 import type {
   OxContentCustomHostStylesheet,
   OxContentCustomHostStylesheetsResult,
@@ -90,6 +90,10 @@ function stylesheetImport(
   if (isCssModuleFile(stylesheet.file)) {
     const binding = `__oxContentSsrCssModule${index}`;
     return `import ${binding} from ${moduleId};\nexport const ${binding}ClassNames = Object.values(${binding});`;
+  }
+  if (isFrameworkStyleRoot(stylesheet.file)) {
+    const binding = `__oxContentSsrStyleRoot${index}`;
+    return `import ${binding} from ${moduleId};\nexport const ${binding}Component = ${binding};`;
   }
   return `import ${moduleId};`;
 }

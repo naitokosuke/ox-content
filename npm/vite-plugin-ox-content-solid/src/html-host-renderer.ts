@@ -1,4 +1,4 @@
-import { toSolidHtmlHostClientModuleId } from "./html-host-registry-paths";
+import { formatHtmlHostDiagnostics, toHtmlHostClientModuleId } from "@ox-content/vite-plugin";
 import {
   renderSolidHtmlHost,
   type RenderSolidHtmlHostResult,
@@ -43,7 +43,7 @@ export class SolidHtmlHostRenderError extends Error {
   readonly diagnostics: SolidHtmlHostDiagnostic[];
 
   constructor(diagnostics: readonly SolidHtmlHostDiagnostic[]) {
-    super(formatSolidHtmlHostDiagnostics(diagnostics));
+    super(formatHtmlHostDiagnostics(diagnostics));
     this.name = "SolidHtmlHostRenderError";
     this.diagnostics = [...diagnostics];
   }
@@ -69,7 +69,7 @@ export function createSolidHtmlHostRenderer(
       resolveClientModule:
         context.resolveClientModule ??
         input.resolveClientModule ??
-        ((module) => toSolidHtmlHostClientModuleId(module.serverModuleId, root)),
+        ((module) => toHtmlHostClientModuleId(module.serverModuleId, root)),
     });
 
     if (policy === "throw" && result.diagnostics.length > 0) {
@@ -78,22 +78,4 @@ export function createSolidHtmlHostRenderer(
 
     return result;
   };
-}
-
-function formatSolidHtmlHostDiagnostics(diagnostics: readonly SolidHtmlHostDiagnostic[]): string {
-  if (diagnostics.length === 0) {
-    return "Solid HTML host rendering failed.";
-  }
-  return diagnostics
-    .map((diagnostic) => {
-      const details = [
-        diagnostic.documentPath,
-        diagnostic.component && `component ${diagnostic.component}`,
-        diagnostic.moduleId && `module ${diagnostic.moduleId}`,
-      ].filter(Boolean);
-      return `${diagnostic.code}: ${diagnostic.message}${
-        details.length > 0 ? ` (${details.join(", ")})` : ""
-      }`;
-    })
-    .join("\n");
 }

@@ -166,6 +166,13 @@ Markdown document as a Vite module. `createSvelteHtmlHostRenderer()` resolves
 document-local MDX imports, loads server modules, renders islands to HTML, and
 records browser module metadata for the island client.
 
+The lower-level framework-neutral contract is exported from
+`@ox-content/vite-plugin/html-host`, and the browser loader contract is exported
+from `@ox-content/islands/html-host`. The Svelte helpers keep the existing
+Svelte-specific names and virtual module id while delegating the shared
+discovery, metadata, lazy-loading, error, completion, and disposal behavior to
+that contract.
+
 ```ts
 import { renderMarkdown, type MdxImport } from "@ox-content/vite-plugin";
 import { createSvelteHtmlHostRenderer } from "@ox-content/vite-plugin-svelte";
@@ -191,6 +198,10 @@ with `data-ox-export` preserving named imports. Use the same module ids in the
 browser loader map so post-local components can share names across documents.
 Pass `diagnostics: "collect"` when a host wants structured diagnostics instead
 of thrown `SvelteHtmlHostRenderError` failures.
+The default server renderer loads `svelte/server` and `svelte` through the same
+`loadModule` callback so Vite development hosts keep the renderer and compiled
+component in one SSR runtime. Hosts that pass `renderComponent` own that runtime
+selection themselves.
 
 The browser client lives on a separate subpath:
 `@ox-content/vite-plugin-svelte/html-host/client`. It can hydrate existing SSR
