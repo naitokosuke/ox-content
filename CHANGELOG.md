@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.1.3] - 2026-09-09
+
+### Features
+
+- support custom host adapters (#1383) _(affects: npm: @ox-content/vite-plugin, @ox-content/vite-plugin-svelte; docs, tooling, workspace metadata)_
+
+### Bug Fixes
+
+- serve published assets during failed replans (#1380) _(affects: npm: @ox-content/vite-plugin)_
+
+### Performance
+
+- validate URL schemes without heap allocation (#1382) _(affects: crates: ox_content_renderer)_
+- skip long table cell runs with memchr (#1381) _(affects: crates: ox_content_parser)_
+- reserve table cells to the exact column count (#1379) _(affects: crates: ox_content_parser)_
+- stream heading attributes from reusable buffers (#1378) _(affects: crates: ox_content_renderer)_
+
 ## [3.1.2] - 2026-09-09
 
 ## [3.1.2-beta.0] - 2026-09-09
