@@ -193,12 +193,16 @@ inside the renderer callback are tracked by the same development lifecycle as
 `ctx.loadModule()` and `ctx.assets.stylesheets()`, so a failed or changed
 renderer can recover without a process-global cache.
 
-The framework integration remains host-owned. For Solid HTML-string hosts, use
-`createSolidHtmlHostRenderer()` from `@ox-content/vite-plugin-solid` inside the
-callback and return its `html` plus any `clientModules` or diagnostics metadata
-the host needs for assets and hydration. `ctx.markdown.render()` only transforms
-the rendered article HTML; hosts that enable copy controls must still include
-reader-chrome CSS, script, and root attributes in their own document shell.
+The framework integration remains host-owned. The framework-neutral island
+contract is available from `@ox-content/vite-plugin/html-host` for adapters that
+own server rendering, head output, slots, browser hydration, mounting, and
+disposal. Solid and Svelte custom hosts can keep using
+`createSolidHtmlHostRenderer()` or `createSvelteHtmlHostRenderer()`; those
+helpers wrap the shared contract and return the rendered `html` plus
+`clientModules` and diagnostics metadata the host needs for assets and
+hydration. `ctx.markdown.render()` only transforms the rendered article HTML;
+hosts that enable copy controls must still include reader-chrome CSS, script,
+and root attributes in their own document shell.
 
 ## Coordinated outputs
 
@@ -322,13 +326,12 @@ ignored. Missing files and references outside `contentRoot` are reported as
 document-scoped diagnostics, while query strings and fragments stay on the
 reported references and are preserved later by `rewriteCollectionAssetUrls()`.
 
-Solid HTML-string hosts can generate their browser island registry from that
-same selected route/document set. Use `createSolidHtmlHostIslandRegistry()` from
-`@ox-content/vite-plugin-solid` and import
-`virtual:ox-content-solid/html-host/modules` in the client entry instead of a
-whole-directory `import.meta.glob()`. The generated module contains only the
-selected island dynamic-import roots; Vite still keeps their transitive
-dependencies.
+HTML-string hosts can generate their browser island registry from that same
+selected route/document set. Use `createHtmlHostIslandRegistry()` from
+`@ox-content/vite-plugin/html-host` for a framework-neutral virtual module, or
+the Solid and Svelte wrappers when the host wants their stable framework
+virtual ids. The generated module contains only the selected island
+dynamic-import roots; Vite still keeps their transitive dependencies.
 
 ## SSR stylesheets
 

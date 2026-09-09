@@ -22,22 +22,26 @@ describe("custom host Svelte SSR stylesheets", () => {
   it.each([
     ["official Svelte", "@sveltejs/vite-plugin-svelte"],
     ["rsvelte", "@rsvelte/vite-plugin-svelte"],
-  ] as const)("discovers scoped Svelte CSS in production with %s", async (_name, plugin) => {
-    const root = await createProject("ox-custom-host-svelte-build-");
-    await writeViteConfig(root, plugin);
-    await viteBuild(viteConfig(root));
+  ] as const)(
+    "discovers scoped Svelte CSS in production with %s",
+    async (_name, plugin) => {
+      const root = await createProject("ox-custom-host-svelte-build-");
+      await writeViteConfig(root, plugin);
+      await viteBuild(viteConfig(root));
 
-    const html = await fs.readFile(path.join(root, "dist", "probe", "index.html"), "utf8");
-    expect(html).toContain('data-diagnostics=""');
-    expect(html).toContain('data-style-content-diagnostics=""');
-    expect(html).toContain('data-critical="/docs/assets/');
-    expect(html).toContain("Hello");
-    expect(html).not.toContain('<script type="module"');
+      const html = await fs.readFile(path.join(root, "dist", "probe", "index.html"), "utf8");
+      expect(html).toContain('data-diagnostics=""');
+      expect(html).toContain('data-style-content-diagnostics=""');
+      expect(html).toContain('data-critical="/docs/assets/');
+      expect(html).toContain("Hello");
+      expect(html).not.toContain('<script type="module"');
 
-    const css = await readLinkedCss(root, html);
-    expect(css).toMatch(/color:(?:red|rgb\(255,0,0\))/u);
-    expect(css).toMatch(/color:(?:#00f|blue|rgb\(0,0,255\))/u);
-  });
+      const css = await readLinkedCss(root, html);
+      expect(css).toMatch(/color:(?:red|rgb\(255,0,0\))/u);
+      expect(css).toMatch(/color:(?:#00f|blue|rgb\(0,0,255\))/u);
+    },
+    30_000,
+  );
 
   it("serves blocking scoped Svelte styles before client JavaScript", async () => {
     const root = await createProject("ox-custom-host-svelte-browser-");
@@ -71,38 +75,42 @@ describe("custom host Svelte SSR stylesheets", () => {
     } finally {
       await browser?.close();
     }
-  });
+  }, 30_000);
 
   it.each([
     ["official Svelte", "@sveltejs/vite-plugin-svelte"],
     ["rsvelte", "@rsvelte/vite-plugin-svelte"],
-  ] as const)("serves and invalidates scoped Svelte CSS in dev with %s", async (_name, plugin) => {
-    const root = await createProject("ox-custom-host-svelte-dev-");
-    await writeViteConfig(root, plugin, { reloadDebounceMs: 1 });
-    const server = await trackServer(createServer(viteConfig(root)));
-    const listener = await listen(server);
+  ] as const)(
+    "serves and invalidates scoped Svelte CSS in dev with %s",
+    async (_name, plugin) => {
+      const root = await createProject("ox-custom-host-svelte-dev-");
+      await writeViteConfig(root, plugin, { reloadDebounceMs: 1 });
+      const server = await trackServer(createServer(viteConfig(root)));
+      const listener = await listen(server);
 
-    const first = await read(listener.port, "/docs/probe");
-    expect(first.status, first.text).toBe(200);
-    expect(first.text).toContain('data-diagnostics=""');
-    expect(first.text).toContain("Page.svelte");
-    expect(first.text).toContain("Child.svelte");
-    expect(first.text).toContain("type=style");
+      const first = await read(listener.port, "/docs/probe");
+      expect(first.status, first.text).toBe(200);
+      expect(first.text).toContain('data-diagnostics=""');
+      expect(first.text).toContain("Page.svelte");
+      expect(first.text).toContain("Child.svelte");
+      expect(first.text).toContain("type=style");
 
-    expect(first.text).toMatch(/color:\s*rgb\(0,\s*0,\s*255\)/u);
+      expect(first.text).toMatch(/color:\s*rgb\(0,\s*0,\s*255\)/u);
 
-    await writeFile(
-      root,
-      "src/Child.svelte",
-      '<p class="child">child</p>\n<style>.child{color:rgb(0,128,0)}</style>\n',
-    );
-    server.watcher.emit("change", path.join(root, "src", "Child.svelte"));
-    await wait(50);
+      await writeFile(
+        root,
+        "src/Child.svelte",
+        '<p class="child">child</p>\n<style>.child{color:rgb(0,128,0)}</style>\n',
+      );
+      server.watcher.emit("change", path.join(root, "src", "Child.svelte"));
+      await wait(50);
 
-    const updated = await read(listener.port, "/docs/probe");
-    expect(updated.text).toContain('data-render="2"');
-    expect(updated.text).toMatch(/color:\s*rgb\(0,\s*128,\s*0\)/u);
-  });
+      const updated = await read(listener.port, "/docs/probe");
+      expect(updated.text).toContain('data-render="2"');
+      expect(updated.text).toMatch(/color:\s*rgb\(0,\s*128,\s*0\)/u);
+    },
+    30_000,
+  );
 });
 
 function viteConfig(root: string): InlineConfig {

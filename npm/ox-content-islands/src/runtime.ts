@@ -195,47 +195,91 @@ export function initIslands(
    */
   function hydrateIsland(element: HTMLElement, config: IslandConfig): void {
     // Find existing instance
-    const instance = instances.find((i) => i.element === element);
-    if (instance?.hydrated) return;
+    let instance = instances.find((i) => i.element === element);
+    if (instance?.hydrated || instance?.hydrating) return;
+    if (!instance) {
+      instance = {
+        element,
+        config,
+        hydrated: false,
+      };
+      instances.push(instance);
+    }
 
     try {
       opts.onHydrateStart?.(element, config);
 
       // Mark as loading
       element.classList.add("ox-island-loading");
+      instance.hydrating = true;
 
       // Call the hydrate function
-      const cleanup = hydrate(element, config.props);
-
-      // Mark as hydrated
-      element.dataset.oxHydrated = "true";
-      element.classList.remove("ox-island-loading");
-
-      // Update instance
-      if (instance) {
-        instance.cleanup = cleanup || undefined;
-        instance.hydrated = true;
-      } else {
-        instances.push({
-          element,
-          config,
-          cleanup: cleanup || undefined,
-          hydrated: true,
-        });
+      const result = hydrate(element, config.props);
+      if (isPromiseLike(result)) {
+        const cleanup = typeof result === "function" ? result : undefined;
+        instance.cleanup = cleanup;
+        void Promise.resolve(result).then(
+          (resolvedCleanup) =>
+            finishHydration(
+              instance,
+              element,
+              config,
+              cleanup ?? (typeof resolvedCleanup === "function" ? resolvedCleanup : undefined),
+            ),
+          (error) => failHydration(instance, element, config, error),
+        );
+        return;
       }
 
-      opts.onHydrateEnd?.(element, config);
+      finishHydration(instance, element, config, result);
     } catch (error) {
-      element.classList.remove("ox-island-loading");
-      element.classList.add("ox-island-error");
-      element.dataset.oxError = error instanceof Error ? error.message : String(error);
-
-      opts.onHydrateError?.(
-        element,
-        config,
-        error instanceof Error ? error : new Error(String(error)),
-      );
+      failHydration(instance, element, config, error);
     }
+  }
+
+  function finishHydration(
+    instance: IslandInstance,
+    element: HTMLElement,
+    config: IslandConfig,
+    cleanup: void | (() => void),
+  ): void {
+    const normalizedCleanup = cleanup || undefined;
+    if (!instances.includes(instance)) {
+      normalizedCleanup?.();
+      return;
+    }
+
+    // Mark as hydrated only after synchronous or asynchronous loading/rendering
+    // has completed successfully.
+    element.dataset.oxHydrated = "true";
+    element.classList.remove("ox-island-loading");
+
+    instance.cleanup = normalizedCleanup;
+    instance.hydrated = true;
+    instance.hydrating = false;
+
+    opts.onHydrateEnd?.(element, config);
+  }
+
+  function failHydration(
+    instance: IslandInstance,
+    element: HTMLElement,
+    config: IslandConfig,
+    error: unknown,
+  ): void {
+    if (!instances.includes(instance)) return;
+
+    element.classList.remove("ox-island-loading");
+    element.classList.add("ox-island-error");
+    element.dataset.oxError = error instanceof Error ? error.message : String(error);
+    instance.cleanup = undefined;
+    instance.hydrating = false;
+
+    opts.onHydrateError?.(
+      element,
+      config,
+      error instanceof Error ? error : new Error(String(error)),
+    );
   }
 
   /**
@@ -353,5 +397,13 @@ export function isIslandsSupported(): boolean {
     typeof document !== "undefined" &&
     typeof IntersectionObserver !== "undefined" &&
     typeof MutationObserver !== "undefined"
+  );
+}
+
+function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+  return (
+    value !== null &&
+    (typeof value === "object" || typeof value === "function") &&
+    typeof (value as PromiseLike<unknown>).then === "function"
   );
 }

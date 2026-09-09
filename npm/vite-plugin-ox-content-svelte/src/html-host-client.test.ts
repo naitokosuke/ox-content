@@ -52,14 +52,24 @@ describe("Svelte HTML host browser client", () => {
         configFile: false,
         logLevel: "silent",
         resolve: {
-          alias: {
-            "@ox-content/vite-plugin-svelte/html-host/client": fileURLToPath(
-              new URL("./html-host-client.ts", import.meta.url),
-            ),
-            "@ox-content/islands": fileURLToPath(
-              new URL("../../ox-content-islands/src/index.ts", import.meta.url),
-            ),
-          },
+          alias: [
+            {
+              find: "@ox-content/vite-plugin-svelte/html-host/client",
+              replacement: fileURLToPath(new URL("./html-host-client.ts", import.meta.url)),
+            },
+            {
+              find: "@ox-content/islands/html-host",
+              replacement: fileURLToPath(
+                new URL("../../ox-content-islands/src/html-host.ts", import.meta.url),
+              ),
+            },
+            {
+              find: "@ox-content/islands",
+              replacement: fileURLToPath(
+                new URL("../../ox-content-islands/src/index.ts", import.meta.url),
+              ),
+            },
+          ],
         },
         build: {
           write: false,
@@ -154,7 +164,7 @@ describe("Svelte HTML host browser client", () => {
     hydrate(element({ oxIsland: "Render", oxModule: "./Render.svelte" }), {});
     await settle();
 
-    expect(errors.map((error) => error.code).sort()).toEqual([
+    expect(errors.map((error) => error.code).sort((a, b) => a.localeCompare(b))).toEqual([
       "missing-export",
       "module-load-failed",
       "render-failed",

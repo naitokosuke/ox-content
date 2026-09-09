@@ -33,3 +33,30 @@ export type {
 
 export { initIslands, createDeferredInit, isIslandsSupported } from "./runtime";
 export { unwrapIslandProps, stripIslandPayloadScript, readIslandSlotHtml } from "./payload";
+export {
+  HtmlHostClientHydrationError,
+  createHtmlHostClientError,
+  createHtmlHostLazyHydrate,
+  initHtmlHost,
+  readHtmlHostSlot,
+  reportHtmlHostClientError,
+} from "./html-host";
+export type {
+  CreateHtmlHostLazyHydrateInput,
+  HtmlHostClientAdapter,
+  HtmlHostClientComponentValue,
+  HtmlHostClientContext,
+  HtmlHostClientDiagnosticCode,
+  HtmlHostClientError,
+  HtmlHostClientModuleLoader,
+  HtmlHostClientModules,
+  HtmlHostClientModuleValue,
+  HtmlHostClientRenderer,
+  HtmlHostClientRuntimeLoader,
+  HtmlHostExportNameResolver,
+  HtmlHostHydrationHandle,
+  HtmlHostInitIslands,
+  HtmlHostLazyHydrateFunction,
+  HtmlHostModuleIdResolver,
+  InitHtmlHostInput,
+} from "./html-host";

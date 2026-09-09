@@ -174,7 +174,7 @@ describe("Solid HTML host DOM renderer", () => {
     await settle();
 
     expect(calls.renders).toEqual([]);
-    expect(errors.map((error) => error.code).sort()).toEqual([
+    expect(errors.map((error) => error.code).sort((a, b) => a.localeCompare(b))).toEqual([
       "module-load-failed",
       "render-failed",
       "runtime-load-failed",

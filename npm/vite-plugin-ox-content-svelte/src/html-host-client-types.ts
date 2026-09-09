@@ -1,65 +1,38 @@
-import type { InitIslandsOptions } from "@ox-content/islands";
+import type { HydrateFunction, InitIslandsOptions } from "@ox-content/islands";
+import type {
+  HtmlHostClientContext,
+  HtmlHostClientDiagnosticCode,
+  HtmlHostClientError,
+  HtmlHostClientModuleLoader,
+  HtmlHostClientRenderer,
+  HtmlHostClientRuntimeLoader,
+  HtmlHostExportNameResolver,
+  HtmlHostHydrationHandle,
+  HtmlHostModuleIdResolver,
+} from "@ox-content/islands/html-host";
 
-export type SvelteHtmlHostClientDiagnosticCode =
-  | "missing-island-name"
-  | "missing-module-id"
-  | "unknown-module"
-  | "module-load-failed"
-  | "runtime-load-failed"
-  | "missing-export"
-  | "render-failed";
-
-export interface SvelteHtmlHostClientError {
-  code: SvelteHtmlHostClientDiagnosticCode;
-  message: string;
-  element: HTMLElement;
-  props: Record<string, unknown>;
-  componentName?: string;
-  moduleId?: string;
-  exportName?: string;
-  cause?: unknown;
-}
-
+export type SvelteHtmlHostClientDiagnosticCode = HtmlHostClientDiagnosticCode;
+export type SvelteHtmlHostClientError = HtmlHostClientError;
 export type SvelteHtmlHostClientComponentValue = unknown;
 export type SvelteHtmlHostClientModuleValue = SvelteHtmlHostClientComponentValue;
 
-export type SvelteHtmlHostClientModuleLoader<TModule = SvelteHtmlHostClientModuleValue> = () =>
-  | TModule
-  | PromiseLike<TModule>;
+export type SvelteHtmlHostClientModuleLoader<TModule = SvelteHtmlHostClientModuleValue> =
+  HtmlHostClientModuleLoader<TModule>;
 
 export type SvelteHtmlHostClientModules =
   | Readonly<Record<string, SvelteHtmlHostClientModuleLoader>>
   | ReadonlyMap<string, SvelteHtmlHostClientModuleLoader>;
 
-export interface SvelteHtmlHostClientContext<TRuntime = undefined> {
-  component: unknown;
-  componentName: string;
-  element: HTMLElement;
-  exportName: string;
-  moduleExports: unknown;
-  moduleId: string;
-  props: Record<string, unknown>;
-  runtime: TRuntime | undefined;
-  slotHtml: string | undefined;
-}
+export type SvelteHtmlHostClientContext<TRuntime = undefined> = HtmlHostClientContext<TRuntime>;
 
-export type SvelteHtmlHostClientRenderer<TRuntime = undefined> = (
-  context: SvelteHtmlHostClientContext<TRuntime>,
-) => void | (() => void) | PromiseLike<void | (() => void)>;
+export type SvelteHtmlHostClientRenderer<TRuntime = undefined> = HtmlHostClientRenderer<TRuntime>;
 
-export type SvelteHtmlHostClientRuntimeLoader<TRuntime = undefined> = () =>
-  | TRuntime
-  | Promise<TRuntime>;
+export type SvelteHtmlHostClientRuntimeLoader<TRuntime = undefined> =
+  HtmlHostClientRuntimeLoader<TRuntime>;
 
-export type SvelteHtmlHostModuleIdResolver = (
-  element: HTMLElement,
-  context: { componentName: string; props: Record<string, unknown> },
-) => string | undefined;
-
-export type SvelteHtmlHostExportNameResolver = (
-  element: HTMLElement,
-  context: { componentName: string; moduleId: string; props: Record<string, unknown> },
-) => string | undefined;
+export type SvelteHtmlHostModuleIdResolver = HtmlHostModuleIdResolver;
+export type SvelteHtmlHostExportNameResolver = HtmlHostExportNameResolver;
+export type SvelteHtmlHostHydrationHandle = HtmlHostHydrationHandle;
 
 export interface SvelteHtmlHostClientBaseInput<TRuntime = undefined> {
   modules: SvelteHtmlHostClientModules;
@@ -110,7 +83,7 @@ export interface SvelteHtmlHostDomRuntime {
 }
 
 export type SvelteHtmlHostInitIslands<TController = unknown> = (
-  hydrate: (element: HTMLElement, props: Record<string, unknown>) => void | (() => void),
+  hydrate: HydrateFunction,
   options?: InitIslandsOptions,
 ) => TController;
 

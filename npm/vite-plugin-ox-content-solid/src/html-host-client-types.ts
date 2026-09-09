@@ -1,24 +1,18 @@
-import type { InitIslandsOptions } from "@ox-content/islands";
+import type { HydrateFunction, InitIslandsOptions } from "@ox-content/islands";
+import type {
+  HtmlHostClientContext,
+  HtmlHostClientDiagnosticCode,
+  HtmlHostClientError,
+  HtmlHostClientModuleLoader as GenericHtmlHostClientModuleLoader,
+  HtmlHostClientRenderer,
+  HtmlHostClientRuntimeLoader,
+  HtmlHostExportNameResolver,
+  HtmlHostHydrationHandle,
+  HtmlHostModuleIdResolver,
+} from "@ox-content/islands/html-host";
 
-export type SolidHtmlHostClientDiagnosticCode =
-  | "missing-island-name"
-  | "missing-module-id"
-  | "unknown-module"
-  | "module-load-failed"
-  | "runtime-load-failed"
-  | "missing-export"
-  | "render-failed";
-
-export interface SolidHtmlHostClientError {
-  code: SolidHtmlHostClientDiagnosticCode;
-  message: string;
-  element: HTMLElement;
-  props: Record<string, unknown>;
-  componentName?: string;
-  moduleId?: string;
-  exportName?: string;
-  cause?: unknown;
-}
+export type SolidHtmlHostClientDiagnosticCode = HtmlHostClientDiagnosticCode;
+export type SolidHtmlHostClientError = HtmlHostClientError;
 
 export type SolidHtmlHostClientComponentValue = (...args: never[]) => unknown;
 export type SolidHtmlHostClientModuleValue =
@@ -27,41 +21,22 @@ export type SolidHtmlHostClientModuleValue =
 
 export type SolidHtmlHostClientModuleLoader<
   TModule extends object = SolidHtmlHostClientModuleValue,
-> = () => TModule | PromiseLike<TModule>;
+> = GenericHtmlHostClientModuleLoader<TModule>;
 
 export type SolidHtmlHostClientModules =
   | Readonly<Record<string, SolidHtmlHostClientModuleLoader>>
   | ReadonlyMap<string, SolidHtmlHostClientModuleLoader>;
 
-export interface SolidHtmlHostClientContext<TRuntime = undefined> {
-  component: unknown;
-  componentName: string;
-  element: HTMLElement;
-  exportName: string;
-  moduleExports: unknown;
-  moduleId: string;
-  props: Record<string, unknown>;
-  runtime: TRuntime | undefined;
-  slotHtml: string | undefined;
-}
+export type SolidHtmlHostClientContext<TRuntime = undefined> = HtmlHostClientContext<TRuntime>;
 
-export type SolidHtmlHostClientRenderer<TRuntime = undefined> = (
-  context: SolidHtmlHostClientContext<TRuntime>,
-) => void | (() => void) | PromiseLike<void | (() => void)>;
+export type SolidHtmlHostClientRenderer<TRuntime = undefined> = HtmlHostClientRenderer<TRuntime>;
 
-export type SolidHtmlHostClientRuntimeLoader<TRuntime = undefined> = () =>
-  | TRuntime
-  | Promise<TRuntime>;
+export type SolidHtmlHostClientRuntimeLoader<TRuntime = undefined> =
+  HtmlHostClientRuntimeLoader<TRuntime>;
 
-export type SolidHtmlHostModuleIdResolver = (
-  element: HTMLElement,
-  context: { componentName: string; props: Record<string, unknown> },
-) => string | undefined;
-
-export type SolidHtmlHostExportNameResolver = (
-  element: HTMLElement,
-  context: { componentName: string; moduleId: string; props: Record<string, unknown> },
-) => string | undefined;
+export type SolidHtmlHostModuleIdResolver = HtmlHostModuleIdResolver;
+export type SolidHtmlHostExportNameResolver = HtmlHostExportNameResolver;
+export type SolidHtmlHostHydrationHandle = HtmlHostHydrationHandle;
 
 export interface SolidHtmlHostClientBaseInput<TRuntime = undefined> {
   modules: SolidHtmlHostClientModules;
@@ -103,7 +78,7 @@ export interface SolidHtmlHostDomRuntime {
 }
 
 export type SolidHtmlHostInitIslands<TController = unknown> = (
-  hydrate: (element: HTMLElement, props: Record<string, unknown>) => void | (() => void),
+  hydrate: HydrateFunction,
   options?: InitIslandsOptions,
 ) => TController;
 
