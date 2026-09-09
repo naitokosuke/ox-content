@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.1.2-beta.0] - 2026-09-09
+
+### Bug Fixes
+
+- skip embeds during html host island discovery _(affects: npm: @ox-content/vite-plugin-solid)_
+- publish stable MPA navigation CSS (#1369) _(affects: crates: ox_content_ssg; npm: @ox-content/vite-plugin; docs)_
+
+### Performance
+
+- cache repeated HTML minifier callbacks _(affects: npm: @ox-content/vite-plugin)_
+
 ## [3.1.1] - 2026-09-08
 
 ## [3.1.1-beta.1] - 2026-09-08
