@@ -1,5 +1,27 @@
 # Changelog
 
+## [3.1.4] - 2026-09-09
+
+### Features
+
+- expose shared html host contract _(affects: npm: @ox-content/islands, @ox-content/vite-plugin, @ox-content/vite-plugin-solid, @ox-content/vite-plugin-svelte; docs, tooling)_
+
+### Bug Fixes
+
+- dispatch Mermaid fences to the native renderer (#1398) _(affects: npm: @ox-content/vite-plugin)_
+- ignore project config for standalone snippet checks (#1397) _(affects: npm: @ox-content/vite-plugin)_
+
+### Performance
+
+- render repeated diagram sources once per document (#1396) _(affects: crates: ox_content_mermaid)_
+- prepare abbreviation candidates once (#1388) _(affects: crates: ox_content_transform)_
+- share repeated SpeakerDeck metadata requests (#1392) _(affects: npm: @ox-content/vite-plugin; tooling)_
+- reuse asynchronous native module normalization (#1395) _(affects: npm: @ox-content/vite-plugin)_
+- reuse repeated KaTeX rendering within documents (#1391) _(affects: npm: @ox-content/vite-plugin; tooling)_
+- skip inactive extension passes (#1390) _(affects: crates: ox_content_transform)_
+- scan BudouX protected blocks without copying HTML (#1386) _(affects: npm: @ox-content/vite-plugin; tooling)_
+- protect static diagrams in one pass (#1385) _(affects: npm: @ox-content/vite-plugin; tooling)_
+
 ## [3.1.3] - 2026-09-09
 
 ### Features
