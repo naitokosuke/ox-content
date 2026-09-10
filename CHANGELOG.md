@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.1.5] - 2026-09-10
+
+### Features
+
+- orchestrate island head assets _(affects: npm: @ox-content/islands, @ox-content/vite-plugin, @ox-content/vite-plugin-solid, @ox-content/vite-plugin-svelte; docs, tooling)_
+
 ## [3.1.4] - 2026-09-09
 
 ### Features
