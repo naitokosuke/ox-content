@@ -5,6 +5,9 @@ export function publicDeclarationValueUsage(entry, prefix) {
   if (entry.specifier === "@ox-content/vite-plugin/html-host") {
     return htmlHostValueUsage(prefix);
   }
+  if (entry.specifier === "@ox-content/islands/html-host") {
+    return genericHtmlHostClientValueUsage(prefix);
+  }
   return htmlHostClientValueUsage(entry, prefix);
 }
 
@@ -57,6 +60,8 @@ function htmlHostValueUsage(prefix) {
     `const htmlHydrate = ${prefix}createHtmlHostHydrate({ components: {}, render: () => {} });`,
     `const htmlRegistry = ${prefix}createHtmlHostIslandRegistry({ entries: [{ name: "Probe", moduleId: "./Probe.ts" }] });`,
     `const htmlDocuments = ${prefix}createHtmlHostCollectionDocuments({});`,
+    'declare const htmlMarkdownContext: RenderHtmlHostMarkdownInput["context"];',
+    `const htmlMarkdown = ${prefix}renderHtmlHostMarkdown({ context: htmlMarkdownContext, renderIslands: htmlRenderer });`,
     `void ${prefix}HTML_HOST_MODULES_VIRTUAL_ID;`,
     `void ${prefix}HtmlHostRenderError;`,
     `void ${prefix}formatHtmlHostDiagnostics([]);`,
@@ -73,6 +78,7 @@ function htmlHostValueUsage(prefix) {
     "void htmlHydrate;",
     "void htmlRegistry;",
     "void htmlDocuments;",
+    "void htmlMarkdown;",
   ].join("\n");
 }
 
@@ -88,6 +94,22 @@ function htmlHostClientValueUsage(entry, prefix) {
     "void hydrate;",
     "void domRenderer;",
     "void domHydrate;",
+  ].join("\n");
+}
+
+function genericHtmlHostClientValueUsage(prefix) {
+  return [
+    "declare const element: HTMLElement;",
+    `const hydrate = ${prefix}createHtmlHostLazyHydrate({ modules: {}, render: () => {} });`,
+    `const init = ${prefix}initHtmlHost({ initIslands: (run) => ({ run }), modules: {}, render: () => {} });`,
+    `const handle: HtmlHostHydrationHandle = hydrate(element, {});`,
+    `const error = ${prefix}createHtmlHostClientError("missing-module-id", element, {}, { frameworkName: "HTML host" });`,
+    `${prefix}reportHtmlHostClientError({ onError: () => {} }, error, "html-host:error");`,
+    `${prefix}readHtmlHostSlot({ dataset: {}, innerHTML: "" });`,
+    `void ${prefix}HtmlHostClientHydrationError;`,
+    "handle();",
+    "handle.then(() => undefined);",
+    "void init;",
   ].join("\n");
 }
 

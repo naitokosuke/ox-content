@@ -5,6 +5,7 @@ import {
   initSolidHtmlHost,
   type SolidHtmlHostClientError,
   type SolidHtmlHostDomRuntime,
+  type SolidHtmlHostInitIslands,
 } from "./html-host-client";
 
 describe("Solid HTML host DOM renderer", () => {
@@ -43,9 +44,7 @@ describe("Solid HTML host DOM renderer", () => {
 
   it("uses initSolidHtmlHost mount mode without downstream Solid glue", async () => {
     const calls = runtimeCalls();
-    let received:
-      | ((element: HTMLElement, props: Record<string, unknown>) => void | (() => void))
-      | undefined;
+    let received: Parameters<SolidHtmlHostInitIslands>[0] | undefined;
     initSolidHtmlHost({
       initIslands(hydrate) {
         received = hydrate;

@@ -197,6 +197,7 @@ describe("createSvelteHtmlHostRenderer", () => {
               const children = options.props?.children as { read: () => string } | undefined;
               return {
                 html: `<section>${String(value === component)}:${children?.read()}</section>`,
+                head: '<meta name="svelte-html-host" content="ready">',
               };
             },
           };
@@ -220,6 +221,7 @@ describe("createSvelteHtmlHostRenderer", () => {
     expect(loaded).toEqual(["/repo/src/Echo.svelte", "svelte/server", "svelte"]);
     expect(result.diagnostics).toEqual([]);
     expect(result.html).toContain("<section>true:<em>slot</em></section>");
+    expect(result.headHtml).toBe('<meta name="svelte-html-host" content="ready">');
   });
 
   it("throws diagnostics by default and can collect them for custom policies", async () => {

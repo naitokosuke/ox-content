@@ -57,3 +57,14 @@ declare module "virtual:ox-content/asset-manifest" {
   const manifest: OxContentAssetManifest;
   export default manifest;
 }
+
+declare module "virtual:ox-content/html-host/modules" {
+  import type {
+    HtmlHostClientModule,
+    HtmlHostVirtualClientModules,
+  } from "@ox-content/vite-plugin/html-host";
+
+  export const modules: HtmlHostVirtualClientModules;
+  export const clientModules: readonly HtmlHostClientModule[];
+  export default modules;
+}

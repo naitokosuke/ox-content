@@ -92,8 +92,7 @@ function stylesheetImport(
     return `import ${binding} from ${moduleId};\nexport const ${binding}ClassNames = Object.values(${binding});`;
   }
   if (isFrameworkStyleRoot(stylesheet.file)) {
-    const binding = `__oxContentSsrStyleRoot${index}`;
-    return `import ${binding} from ${moduleId};\nexport const ${binding}Component = ${binding};`;
+    return `import ${moduleId};`;
   }
   return `import ${moduleId};`;
 }

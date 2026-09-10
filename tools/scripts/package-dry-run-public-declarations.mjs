@@ -121,7 +121,10 @@ function checkTypeConsumer({ tarball, entry, packDir, failures, packedPackages, 
   writeFileSync(join(consumerRoot, "package.json"), JSON.stringify({ type: "module" }));
   writeFileSync(join(consumerRoot, "esm-fixture.ts"), esmFixture(entry));
   writeFileSync(join(consumerRoot, "cjs-fixture.cts"), cjsFixture(entry));
-  writeFileSync(join(consumerRoot, "tsconfig.json"), tsconfig(mode));
+  writeFileSync(
+    join(consumerRoot, "tsconfig.json"),
+    tsconfig(mode, undefined, entry.typeConsumerSkipLibCheck ?? true),
+  );
 
   const result = spawnSync(tscBin, ["-p", join(consumerRoot, "tsconfig.json")], {
     encoding: "utf8",
@@ -249,7 +252,7 @@ function runtimeAssertions(namespace, entry) {
     .join("\n");
 }
 
-function tsconfig(mode, files) {
+function tsconfig(mode, files, skipLibCheck = true) {
   const compilerOptions =
     mode === "bundler"
       ? {
@@ -258,7 +261,7 @@ function tsconfig(mode, files) {
           moduleResolution: "Bundler",
           lib: ["ES2022", "DOM"],
           strict: true,
-          skipLibCheck: true,
+          skipLibCheck,
           noEmit: true,
         }
       : {
@@ -267,7 +270,7 @@ function tsconfig(mode, files) {
           moduleResolution: mode === "nodenext" ? "NodeNext" : "Node16",
           lib: ["ES2022", "DOM"],
           strict: true,
-          skipLibCheck: true,
+          skipLibCheck,
           noEmit: true,
         };
 

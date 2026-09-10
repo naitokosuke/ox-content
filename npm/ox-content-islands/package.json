@@ -58,7 +58,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "vp pack",
+    "build": "vp pack && node ../../tools/scripts/stabilize-public-declaration-exports.mjs @ox-content/islands",
     "dev": "vp pack --watch",
     "typecheck": "tsgo --noEmit"
   },

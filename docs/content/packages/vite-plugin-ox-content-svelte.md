@@ -164,7 +164,10 @@ Custom hosts that call `renderMarkdown()` and place the resulting HTML inside
 their own Svelte page shell can use the Svelte adapter without importing each
 Markdown document as a Vite module. `createSvelteHtmlHostRenderer()` resolves
 document-local MDX imports, loads server modules, renders islands to HTML, and
-records browser module metadata for the island client.
+records browser module metadata for the island client. Svelte SSR `head` output,
+including `<svelte:head>` markup and injected scoped CSS, is returned as
+`headHtml` so the host can place it in the document `<head>` before client
+entries.
 
 The lower-level framework-neutral contract is exported from
 `@ox-content/vite-plugin/html-host`, and the browser loader contract is exported
@@ -202,6 +205,25 @@ The default server renderer loads `svelte/server` and `svelte` through the same
 `loadModule` callback so Vite development hosts keep the renderer and compiled
 component in one SSR runtime. Hosts that pass `renderComponent` own that runtime
 selection themselves.
+
+Inside `ctx.markdown.render({ renderHtml })`, `renderHtmlHostMarkdown()` from
+`@ox-content/vite-plugin/html-host` can combine the Svelte island renderer with
+the Markdown context and return `metadata.documentAssets` for the final document
+shell:
+
+```ts
+const page = await ctx.markdown.render({
+  source,
+  documentPath: "content/post.mdx",
+  renderHtml(markdown) {
+    return renderHtmlHostMarkdown({
+      context: markdown,
+      renderIslands,
+      documentAssets: { clientEntries: ["src/client.ts"] },
+    });
+  },
+});
+```
 
 The browser client lives on a separate subpath:
 `@ox-content/vite-plugin-svelte/html-host/client`. It can hydrate existing SSR

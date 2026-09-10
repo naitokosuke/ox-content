@@ -198,11 +198,19 @@ contract is available from `@ox-content/vite-plugin/html-host` for adapters that
 own server rendering, head output, slots, browser hydration, mounting, and
 disposal. Solid and Svelte custom hosts can keep using
 `createSolidHtmlHostRenderer()` or `createSvelteHtmlHostRenderer()`; those
-helpers wrap the shared contract and return the rendered `html` plus
-`clientModules` and diagnostics metadata the host needs for assets and
-hydration. `ctx.markdown.render()` only transforms the rendered article HTML;
-hosts that enable copy controls must still include reader-chrome CSS, script,
-and root attributes in their own document shell.
+helpers wrap the shared contract and return the rendered `html`, `headHtml`,
+`clientModules`, and diagnostics metadata the host needs for assets and
+hydration. `renderHtmlHostMarkdown()` from
+`@ox-content/vite-plugin/html-host` can be used inside `renderHtml(markdown)`
+when the host wants the shared Markdown HTML, island metadata, and document
+asset composition in one step. The host still owns route selection, publication
+rules, layout, URL policy, and global styles.
+
+Island head output is appended in document island order before client entries
+when the returned `documentAssets.headHtml` is placed in the document `<head>`.
+Exact serialized head fragments are emitted once, so two islands that return the
+same scoped `<style>` do not duplicate it; semantic conflicts such as two
+different `<title>` values remain host/framework policy.
 
 ## Coordinated outputs
 
@@ -429,6 +437,28 @@ identities with emitted hashed stylesheet hrefs. Missing entries are reported
 as diagnostics instead of silently dropping styles. Pass the returned styles
 into `ctx.assets.document()` so document-level dedupe, nonce, base, shared CSS,
 and page CSS composition all stay in one place.
+
+For Markdown-first HTML-string hosts, the shared helper wires the same pieces
+through the custom-host Markdown lifecycle:
+
+```ts
+const page = await ctx.markdown.render({
+  source,
+  documentPath: "content/posts/hello.mdx",
+  renderHtml(markdown) {
+    return renderHtmlHostMarkdown({
+      context: markdown,
+      renderIslands,
+      documentAssets: { clientEntries: ["src/client.ts"] },
+    });
+  },
+});
+
+return {
+  html: `<!doctype html><html><head>${page.metadata?.documentAssets?.headHtml ?? ""}</head><body>${page.html}</body></html>`,
+  dependencies: page.dependencies,
+};
+```
 
 Build hosts that deliberately inline critical CSS can read the emitted bytes for
 the same resolved descriptors without deriving filesystem paths from public
