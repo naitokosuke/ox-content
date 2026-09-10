@@ -33,7 +33,14 @@ describe("custom host SSR stylesheets", () => {
         },
         "/repo",
       ),
-    ).toBe(['import "/src/Page.svelte";', 'import "/src/page.css";', ""].join("\n"));
+    ).toBe(
+      [
+        'import __oxContentSsrStyleRoot0 from "/src/Page.svelte";',
+        "globalThis.__oxContentSsrStyleRoot?.(__oxContentSsrStyleRoot0);",
+        'import "/src/page.css";',
+        "",
+      ].join("\n"),
+    );
   });
 
   it("collects imported build chunk CSS before direct root CSS", () => {

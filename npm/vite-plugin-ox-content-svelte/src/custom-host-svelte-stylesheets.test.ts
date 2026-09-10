@@ -39,6 +39,7 @@ describe("custom host Svelte SSR stylesheets", () => {
       const css = await readLinkedCss(root, html);
       expect(css).toMatch(/color:(?:red|rgb\(255,0,0\))/u);
       expect(css).toMatch(/color:(?:#00f|blue|rgb\(0,0,255\))/u);
+      expect(css).toMatch(/color:(?:green|rgb\(0,128,0\))/u);
     },
     30_000,
   );
@@ -62,16 +63,19 @@ describe("custom host Svelte SSR stylesheets", () => {
       const state = await page.evaluate(() => {
         const probe = document.querySelector(".probe");
         const child = document.querySelector(".child");
+        const header = document.querySelector(".siteHeader");
         return {
           scripts: document.scripts.length,
           probeColor: probe ? getComputedStyle(probe).color : "",
           childColor: child ? getComputedStyle(child).color : "",
+          headerColor: header ? getComputedStyle(header).color : "",
         };
       });
 
       expect(state.scripts).toBe(0);
       expect(state.probeColor).toBe("rgb(255, 0, 0)");
       expect(state.childColor).toBe("rgb(0, 0, 255)");
+      expect(state.headerColor).toBe("rgb(0, 128, 0)");
     } finally {
       await browser?.close();
     }
@@ -93,9 +97,11 @@ describe("custom host Svelte SSR stylesheets", () => {
       expect(first.text).toContain('data-diagnostics=""');
       expect(first.text).toContain("Page.svelte");
       expect(first.text).toContain("Child.svelte");
+      expect(first.text).toContain("SiteHeader.svelte");
       expect(first.text).toContain("type=style");
 
       expect(first.text).toMatch(/color:\s*rgb\(0,\s*0,\s*255\)/u);
+      expect(first.text).toMatch(/color:\s*rgb\(0,\s*128,\s*0\)/u);
 
       await writeFile(
         root,
@@ -114,10 +120,7 @@ describe("custom host Svelte SSR stylesheets", () => {
 });
 
 function viteConfig(root: string): InlineConfig {
-  return {
-    root,
-    configFile: path.join(root, "vite.config.mjs"),
-  };
+  return { root, configFile: path.join(root, "vite.config.mjs") };
 }
 
 async function createProject(prefix: string): Promise<string> {
@@ -130,19 +133,22 @@ async function createProject(prefix: string): Promise<string> {
   await writeFile(
     root,
     "src/Page.svelte",
-    [
-      "<script>",
-      '  import Child from "./Child.svelte";',
-      "</script>",
-      '<h1 class="probe">Hello</h1>',
-      "<Child />",
-      "<style>.probe{color:rgb(255,0,0)}</style>",
-    ].join("\n"),
+    '<script>\n  import Child from "./Child.svelte";\n</script>\n<h1 class="probe">Hello</h1>\n<Child />\n<style>.probe{color:rgb(255,0,0)}</style>\n',
   );
   await writeFile(
     root,
     "src/Child.svelte",
     '<p class="child">child</p>\n<style>.child{color:rgb(0,0,255)}</style>\n',
+  );
+  await writeFile(
+    root,
+    "src/SiteLayout.svelte",
+    '<script>\n  import SiteHeader from "./SiteHeader.svelte";\n</script>\n<SiteHeader />\n',
+  );
+  await writeFile(
+    root,
+    "src/SiteHeader.svelte",
+    '<header class="siteHeader">header</header>\n<style>.siteHeader{color:rgb(0,128,0)}</style>\n',
   );
   await writeFile(root, "src/host.ts", hostModuleSource());
   return root;
@@ -169,7 +175,7 @@ async function writeViteConfig(
       "  logLevel: 'silent',",
       "  plugins: [",
       "    noopSsrSvelteStyleImports(),",
-      "    svelte(),",
+      "    svelte({ configFile: false }),",
       "    ...oxContentCustomHost({",
       '      host: "./src/host.ts",',
       "      oxContent: {",
@@ -183,7 +189,7 @@ async function writeViteConfig(
       "        feeds: false,",
       "        siteMaps: false,",
       "      },",
-      '      ssrStylesheets: { modules: ["/src/Page.svelte"] },',
+      '      ssrStylesheets: { modules: ["/src/Page.svelte", "/src/SiteLayout.svelte"] },',
       "      build: { transformHtml: false, runInTest: true },",
       `      dev: ${JSON.stringify(devOptions)},`,
       "    }),",
@@ -243,9 +249,13 @@ export default {
       async render(ctx) {
         renders += 1;
         const { default: Page } = await ctx.loadModule("/src/Page.svelte");
+        const { default: SiteLayout } = await ctx.loadModule("/src/SiteLayout.svelte");
         const { render } = await ctx.loadModule("svelte/server");
         const rendered = render(Page);
-        const ssr = ctx.assets.ssrStylesheets({ modules: ["/src/Page.svelte"] });
+        const layout = render(SiteLayout);
+        const ssr = ctx.assets.ssrStylesheets({
+          modules: ["/src/Page.svelte", "/src/SiteLayout.svelte"],
+        });
         const content = await ctx.assets.stylesheetContent({ stylesheets: ssr.stylesheets });
         const assets = ctx.assets.document({
           islandStyles: ssr.stylesheets,
@@ -256,7 +266,7 @@ export default {
           })),
         });
         return {
-          html: "<!doctype html><html><head>" + assets.headHtml + "</head><body data-render=\\"" + renders + "\\" data-diagnostics=\\"" + ssr.diagnostics.map((diagnostic) => diagnostic.code).join(",") + "\\" data-style-content-diagnostics=\\"" + content.diagnostics.map((diagnostic) => diagnostic.code).join(",") + "\\">" + (rendered.html || rendered.body || "") + "</body></html>",
+          html: "<!doctype html><html><head>" + assets.headHtml + "</head><body data-render=\\"" + renders + "\\" data-diagnostics=\\"" + ssr.diagnostics.map((diagnostic) => diagnostic.code).join(",") + "\\" data-style-content-diagnostics=\\"" + content.diagnostics.map((diagnostic) => diagnostic.code).join(",") + "\\">" + (layout.html || layout.body || "") + (rendered.html || rendered.body || "") + "</body></html>",
           dependencies: ssr.dependencies,
         };
       },
@@ -334,7 +344,5 @@ function wait(ms: number): Promise<void> {
 }
 
 function closeServer(server: http.Server): Promise<void> {
-  return new Promise((resolve) => {
-    server.close(() => resolve());
-  });
+  return new Promise((resolve) => server.close(() => resolve()));
 }

@@ -92,7 +92,9 @@ function stylesheetImport(
     return `import ${binding} from ${moduleId};\nexport const ${binding}ClassNames = Object.values(${binding});`;
   }
   if (isFrameworkStyleRoot(stylesheet.file)) {
-    return `import ${moduleId};`;
+    const binding = `__oxContentSsrStyleRoot${index}`;
+    // Svelte plugins may drop CSS for roots that are imported only for side effects.
+    return `import ${binding} from ${moduleId};\nglobalThis.__oxContentSsrStyleRoot?.(${binding});`;
   }
   return `import ${moduleId};`;
 }
