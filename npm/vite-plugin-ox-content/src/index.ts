@@ -1064,10 +1064,13 @@ export type {
   HtmlHostClientModule,
   HtmlHostClientModuleResolver,
   HtmlHostComponentRenderContext,
+  HtmlHostComponentRenderOutput,
+  HtmlHostComponentRenderResult,
   HtmlHostComponentRenderer,
   HtmlHostDiagnostic,
   HtmlHostDiagnosticCode,
   HtmlHostFrameworkAdapter,
+  HtmlHostHeadContribution,
   HtmlHostHydrateRenderer,
   HtmlHostModule,
   HtmlHostServerModuleLoader,
@@ -1085,6 +1088,12 @@ export type {
   HtmlHostRendererContext,
   HtmlHostRendererDiagnosticPolicy,
 } from "./html-host-renderer";
+export { renderHtmlHostMarkdown } from "./html-host-markdown";
+export type {
+  HtmlHostMarkdownMetadata,
+  HtmlHostVirtualClientModules,
+  RenderHtmlHostMarkdownInput,
+} from "./html-host-markdown";
 export {
   HTML_HOST_MODULES_VIRTUAL_ID,
   createHtmlHostIslandRegistry,

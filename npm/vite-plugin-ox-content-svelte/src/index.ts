@@ -86,6 +86,7 @@ export {
   type SvelteHtmlHostClientModule,
   type SvelteHtmlHostDiagnostic,
   type SvelteHtmlHostDiagnosticCode,
+  type SvelteHtmlHostHeadContribution,
   type SvelteHtmlHostModule,
   type SvelteServerModuleLoader,
 } from "./html-host";

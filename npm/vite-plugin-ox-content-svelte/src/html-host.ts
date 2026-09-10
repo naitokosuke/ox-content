@@ -6,6 +6,7 @@ import {
   type HtmlHostComponentRenderer,
   type HtmlHostDiagnostic,
   type HtmlHostDiagnosticCode,
+  type HtmlHostHeadContribution,
   type HtmlHostHydrateRenderer,
   type HtmlHostModule,
   type HtmlHostServerModuleLoader,
@@ -36,10 +37,13 @@ export interface RenderSvelteHtmlHostInput extends Omit<
 
 export interface RenderSvelteHtmlHostResult {
   html: string;
+  headHtml: string;
+  headContributions: SvelteHtmlHostHeadContribution[];
   modules: SvelteHtmlHostModule[];
   clientModules: SvelteHtmlHostClientModule[];
   diagnostics: SvelteHtmlHostDiagnostic[];
 }
+export interface SvelteHtmlHostHeadContribution extends HtmlHostHeadContribution {}
 
 export type SvelteHostHydrateRenderer = HtmlHostHydrateRenderer;
 export type CreateSvelteHtmlHostHydrateInput = CreateHtmlHostHydrateInput;

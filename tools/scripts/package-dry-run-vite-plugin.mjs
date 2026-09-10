@@ -46,6 +46,7 @@ const virtualModules = [
   "virtual:ox-content/collections",
   "virtual:ox-content/assets.css",
   "virtual:ox-content/asset-manifest",
+  "virtual:ox-content/html-host/modules",
 ];
 
 export function checkVitePluginDeclarations({ pkg, tarball, packDir, failures, readPackedFile }) {

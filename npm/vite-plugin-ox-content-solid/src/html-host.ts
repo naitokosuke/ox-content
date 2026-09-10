@@ -6,6 +6,7 @@ import {
   type HtmlHostComponentRenderer,
   type HtmlHostDiagnostic,
   type HtmlHostDiagnosticCode,
+  type HtmlHostHeadContribution,
   type HtmlHostHydrateRenderer,
   type HtmlHostModule,
   type HtmlHostServerModuleLoader,
@@ -35,10 +36,13 @@ export interface RenderSolidHtmlHostInput extends Omit<
 
 export interface RenderSolidHtmlHostResult {
   html: string;
+  headHtml: string;
+  headContributions: SolidHtmlHostHeadContribution[];
   modules: SolidHtmlHostModule[];
   clientModules: SolidHtmlHostClientModule[];
   diagnostics: SolidHtmlHostDiagnostic[];
 }
+export interface SolidHtmlHostHeadContribution extends HtmlHostHeadContribution {}
 
 export type SolidHostHydrateRenderer = HtmlHostHydrateRenderer;
 export type CreateSolidHtmlHostHydrateInput = CreateHtmlHostHydrateInput;

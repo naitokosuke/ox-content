@@ -4,10 +4,12 @@ import {
   createHtmlHostHydrate,
   createHtmlHostRenderer,
   renderHtmlHost,
+  renderHtmlHostMarkdown,
   resolveHtmlHostIslandRegistry,
   type HtmlHostFrameworkAdapter,
   type MdxImport,
 } from ".";
+import type { RenderDocumentAssetsInput } from "./document-assets";
 
 const adapter: HtmlHostFrameworkAdapter = {
   frameworkName: "Test",
@@ -82,6 +84,124 @@ describe("framework-neutral HTML host contract", () => {
       },
     ]);
     expect(error.message).toContain("missing-component");
+  });
+
+  it("collects island head contributions once in document order", async () => {
+    const result = await renderHtmlHost({
+      html: '<div data-ox-island="First"></div><div data-ox-island="Second"></div>',
+      documentPath: "/repo/docs/report.mdx",
+      root: "/repo",
+      components: {
+        First: "./src/First.ts",
+        Second: "./src/Second.ts",
+      },
+      loadModule: async (moduleId) => ({
+        default: moduleId.endsWith("First.ts") ? "first" : "second",
+      }),
+      renderComponent: (component) => ({
+        html: `<strong>${String(component)}</strong>`,
+        head: [
+          '<style data-svelte-h="shared">.probe{color:red}</style>',
+          `<meta name="${String(component)}" content="ready">`,
+        ].join(""),
+      }),
+    });
+
+    expect(result.headContributions).toEqual([
+      {
+        component: "First",
+        moduleId: "/repo/src/First.ts",
+        html: '<style data-svelte-h="shared">.probe{color:red}</style>',
+      },
+      {
+        component: "First",
+        moduleId: "/repo/src/First.ts",
+        html: '<meta name="first" content="ready">',
+      },
+      {
+        component: "Second",
+        moduleId: "/repo/src/Second.ts",
+        html: '<meta name="second" content="ready">',
+      },
+    ]);
+    expect(result.headHtml).toBe(
+      [
+        '<style data-svelte-h="shared">.probe{color:red}</style>',
+        '<meta name="first" content="ready">',
+        '<meta name="second" content="ready">',
+      ].join("\n"),
+    );
+  });
+
+  it("integrates Markdown render contexts with island metadata and document assets", async () => {
+    const result = await renderHtmlHostMarkdown({
+      context: {
+        html: '<div data-ox-island="Chart"></div>',
+        transform: { imports: [defaultImport("Chart", "./Chart.ts")] },
+        source: "",
+        documentPath: "/repo/docs/report.mdx",
+        root: "/repo",
+        srcDir: "/repo/docs",
+        contentRoot: "/repo/docs",
+        base: "/docs/",
+        mode: "build",
+        loadModule: async () => ({}),
+        assets: {
+          stylesheets: ({ modules }: { modules: readonly string[] }) => ({
+            stylesheets: modules.map((moduleId) => ({
+              kind: "style" as const,
+              href: `/docs/assets/${moduleId.split("/").pop()}.css`,
+              moduleId,
+            })),
+            diagnostics: [],
+            dependencies: ["/repo/src/Chart.css"],
+          }),
+          document: (input: RenderDocumentAssetsInput = {}) => {
+            const islandStyles = input.islandStyles ?? [];
+            return {
+              links: [],
+              styles: [],
+              scripts: [],
+              tags: [],
+              headHtml: [
+                typeof input.head === "string" ? input.head : input.head?.html,
+                ...islandStyles.map((style) =>
+                  typeof style === "string" ? style : (style.href ?? style.content),
+                ),
+              ]
+                .filter(Boolean)
+                .join("\n"),
+            };
+          },
+        },
+      } as never,
+      renderIslands: async () => ({
+        html: '<div data-ox-island="Chart" data-ox-module="/src/Chart.ts"></div>',
+        headHtml: '<meta name="chart" content="ready">',
+        headContributions: [],
+        modules: [
+          {
+            name: "Chart",
+            serverModuleId: "/repo/docs/Chart.ts",
+            exportName: "default",
+            source: "document",
+            clientModuleId: "/src/Chart.ts",
+          },
+        ],
+        clientModules: [{ name: "Chart", moduleId: "/src/Chart.ts", exportName: "default" }],
+        diagnostics: [],
+      }),
+    });
+
+    expect(result.html).toContain('data-ox-module="/src/Chart.ts"');
+    expect(result.dependencies).toEqual(["/repo/src/Chart.css"]);
+    expect(result.metadata?.clientModules).toEqual([
+      { name: "Chart", moduleId: "/src/Chart.ts", exportName: "default" },
+    ]);
+    expect(result.metadata?.documentAssets?.headHtml).toContain(
+      '<meta name="chart" content="ready">',
+    );
+    expect(result.metadata?.documentAssets?.headHtml).toContain("/docs/assets/Chart.ts.css");
   });
 
   it("resolves shared registry modules from explicit entries and document imports", async () => {

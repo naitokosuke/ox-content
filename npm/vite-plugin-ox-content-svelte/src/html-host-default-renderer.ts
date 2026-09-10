@@ -1,10 +1,11 @@
+import type { HtmlHostComponentRenderResult } from "@ox-content/vite-plugin";
 import type { SvelteHtmlComponentRenderer, SvelteServerModuleLoader } from "./html-host";
 
 type SvelteServerRuntime = {
   render: (
     component: never,
     options: { props?: Record<string, unknown> },
-  ) => { body?: string; html?: string };
+  ) => { body?: string; head?: string; html?: string };
 };
 
 type SvelteSharedRuntime = {
@@ -57,12 +58,15 @@ function renderWithSvelteRuntime(
   component: unknown,
   props: Record<string, unknown>,
   slotHtml: string | undefined,
-): string {
+): HtmlHostComponentRenderResult {
   const componentProps = slotHtml
     ? { ...props, children: runtime.createRawSnippet(() => ({ render: () => slotHtml })) }
     : props;
   const rendered = runtime.render(component as never, { props: componentProps });
-  return rendered.html ?? rendered.body ?? "";
+  return {
+    html: rendered.html ?? rendered.body ?? "",
+    head: rendered.head,
+  };
 }
 
 function resolveSvelteRuntime(server: unknown, shared: unknown): ResolvedSvelteRuntime {

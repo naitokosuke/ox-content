@@ -52,6 +52,7 @@ export {
   type SolidHtmlHostClientModule,
   type SolidHtmlHostDiagnostic,
   type SolidHtmlHostDiagnosticCode,
+  type SolidHtmlHostHeadContribution,
   type SolidHtmlHostModule,
   type SolidServerModuleLoader,
 } from "./html-host";

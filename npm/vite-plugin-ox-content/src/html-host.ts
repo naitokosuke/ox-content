@@ -1,12 +1,19 @@
 import path from "node:path";
-import { applyIslandSsrHtml } from "./island-ssr";
 import { resolveContentRootPath, resolveDocumentComponentImports } from "./document-imports";
 import type { DocumentImportDiagnostic } from "./document-imports";
+import {
+  dedupeHeadContributions,
+  headContributionsFromRenderResult,
+  normalizeRenderResult,
+  type HtmlHostHeadResult,
+} from "./html-host-head";
+import { applyIslandSsrHtml } from "./island-ssr";
 import { collectMdxIslandNamesFromHtml } from "./mdx-islands";
 import type { MdxImport } from "./types";
 import type { HtmlHostComponentsMap } from "./html-host-components";
 
-const ISLAND_JSON_SCRIPT = /^\s*<script type="application\/json">[\s\S]*?<\/script>/;
+export { createHtmlHostHydrate } from "./html-host-hydrate";
+export type { CreateHtmlHostHydrateInput, HtmlHostHydrateRenderer } from "./html-host-hydrate";
 
 export interface HtmlHostModule {
   name: string;
@@ -46,12 +53,19 @@ export interface HtmlHostComponentRenderContext {
   documentPath: string;
 }
 
+export interface HtmlHostComponentRenderResult {
+  html: string;
+  head?: string;
+}
+
+export type HtmlHostComponentRenderOutput = string | HtmlHostComponentRenderResult;
+
 export type HtmlHostComponentRenderer = (
   component: unknown,
   props: Record<string, unknown>,
   slotHtml: string | undefined,
   context: HtmlHostComponentRenderContext,
-) => string | Promise<string>;
+) => HtmlHostComponentRenderOutput | Promise<HtmlHostComponentRenderOutput>;
 
 export interface HtmlHostFrameworkAdapter {
   frameworkName?: string;
@@ -80,21 +94,17 @@ export interface RenderHtmlHostInput {
 
 export interface RenderHtmlHostResult {
   html: string;
+  headHtml: string;
+  headContributions: HtmlHostHeadContribution[];
   modules: HtmlHostModule[];
   clientModules: HtmlHostClientModule[];
   diagnostics: HtmlHostDiagnostic[];
 }
 
-export type HtmlHostHydrateRenderer = (
-  component: unknown,
-  props: Record<string, unknown>,
-  element: HTMLElement,
-  slotHtml: string | undefined,
-) => void | (() => void);
-
-export interface CreateHtmlHostHydrateInput {
-  components: Readonly<Record<string, unknown>> | ReadonlyMap<string, unknown>;
-  render: HtmlHostHydrateRenderer;
+export interface HtmlHostHeadContribution {
+  component: string;
+  moduleId: string;
+  html: string;
 }
 
 export async function renderHtmlHost(input: RenderHtmlHostInput): Promise<RenderHtmlHostResult> {
@@ -108,10 +118,14 @@ export async function renderHtmlHost(input: RenderHtmlHostInput): Promise<Render
   const modules = resolveHostModules(input, diagnostics, frameworkName);
   const byName = new Map(modules.map((module) => [module.name, module] as const));
   const cache = new Map<string, Promise<unknown>>();
+  const headResults: HtmlHostHeadResult[] = [];
+  let nextIslandOrder = 0;
 
   const html = await applyIslandSsrHtml(
     input.html,
     async (name, props, _filePath, slotHtml) => {
+      const order = -nextIslandOrder;
+      nextIslandOrder += 1;
       const module = byName.get(name);
       if (!module) {
         diagnostics.push({
@@ -127,11 +141,20 @@ export async function renderHtmlHost(input: RenderHtmlHostInput): Promise<Render
         return slotHtml ?? "";
       }
       try {
-        return await renderComponent(component, props, slotHtml || undefined, {
+        const rendered = await renderComponent(component, props, slotHtml || undefined, {
           component: name,
           moduleId: module.serverModuleId,
           documentPath: input.documentPath,
         });
+        const result = normalizeRenderResult(rendered);
+        const contributions = headContributionsFromRenderResult(result, {
+          component: name,
+          moduleId: module.serverModuleId,
+        });
+        if (contributions.length > 0) {
+          headResults.push({ order, contributions });
+        }
+        return result.html;
       } catch (error) {
         diagnostics.push({
           code: "ssr-failed",
@@ -146,9 +169,12 @@ export async function renderHtmlHost(input: RenderHtmlHostInput): Promise<Render
     input.documentPath,
     modules.map((module) => module.name),
   );
+  const headContributions = dedupeHeadContributions(headResults);
 
   return {
     html: markClientModules(html, modules),
+    headHtml: headContributions.map((contribution) => contribution.html).join("\n"),
+    headContributions,
     modules,
     clientModules: modules.flatMap((module) =>
       module.clientModuleId
@@ -156,24 +182,6 @@ export async function renderHtmlHost(input: RenderHtmlHostInput): Promise<Render
         : [],
     ),
     diagnostics,
-  };
-}
-
-export function createHtmlHostHydrate(
-  input: CreateHtmlHostHydrateInput,
-): (element: HTMLElement, props: Record<string, unknown>) => void | (() => void) {
-  return (element, props) => {
-    const name = element.dataset.oxIsland;
-    if (!name) {
-      return undefined;
-    }
-    const component = componentFromRegistry(input.components, name);
-    if (!component) {
-      return undefined;
-    }
-    const slotHtml = readIslandSlotHtml(element);
-    element.innerHTML = "";
-    return input.render(component, props, element, slotHtml || undefined);
   };
 }
 
@@ -278,26 +286,6 @@ function exportedValue(exports: unknown, exportName: string): unknown {
     return undefined;
   }
   return (exports as Record<string, unknown>)[exportName];
-}
-
-function componentFromRegistry(
-  registry: CreateHtmlHostHydrateInput["components"],
-  name: string,
-): unknown {
-  return isReadonlyMap(registry) ? registry.get(name) : registry[name];
-}
-
-function isReadonlyMap(
-  value: CreateHtmlHostHydrateInput["components"],
-): value is ReadonlyMap<string, unknown> {
-  return typeof (value as ReadonlyMap<string, unknown>).get === "function";
-}
-
-function readIslandSlotHtml(element: Pick<HTMLElement, "dataset" | "innerHTML">): string {
-  const fromAttr = element.dataset.oxContent;
-  if (fromAttr) return fromAttr;
-  if (element.dataset.oxSsr === "true") return "";
-  return element.innerHTML.replace(ISLAND_JSON_SCRIPT, "");
 }
 
 function markClientModules(html: string, modules: readonly HtmlHostModule[]): string {
