@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.1.6] - 2026-09-10
+
+### Bug Fixes
+
+- retain Svelte SSR stylesheet roots _(affects: npm: @ox-content/vite-plugin, @ox-content/vite-plugin-svelte)_
+
 ## [3.1.5] - 2026-09-10
 
 ### Features
