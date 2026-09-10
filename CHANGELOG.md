@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.1.7] - 2026-09-10
+
+### Bug Fixes
+
+- resolve dev SSR stylesheet aliases (#1407) _(affects: npm: @ox-content/vite-plugin, @ox-content/vite-plugin-svelte)_
+
 ## [3.1.6] - 2026-09-10
 
 ### Bug Fixes
